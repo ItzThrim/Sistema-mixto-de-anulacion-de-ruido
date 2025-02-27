@@ -1,0 +1,35 @@
+import numpy as np
+import soundfile as sf
+
+def create_signal_with_noise(
+    frequency,
+    duration,
+    sampling=44100,
+    noise_level=0.1,
+    filename="signal_with_noise.wav",
+):
+    # Crear el eje temporal
+    time = np.linspace(0, duration, int(sampling * duration), endpoint=False)
+
+    # Generar una señal senoidal
+    wave = 0.5 * np.sin(2 * np.pi * frequency * time).astype(np.float32)
+
+    # Generar ruido aleatorio gaussiano
+    noise = noise_level * np.random.randn(len(time)).astype(np.float32)
+
+    # Sumar la señal y el ruido
+    signal_with_noise = wave + noise
+
+    # Normalizar la señal
+    signal_with_noise = signal_with_noise / np.max(np.abs(signal_with_noise))
+
+    # Guardar la señal en un archivo WAV
+    sf.write(filename, signal_with_noise, sampling, subtype="PCM_16")
+
+# Crear una señal pura de 440 Hz
+create_signal_with_noise(440, 10, filename="../data/raw/440.wav")
+
+# Crear la misma señal pero con ruido agregado
+create_signal_with_noise(
+    440, 10, noise_level=0.5, filename="../data/raw/440_with_noise.wav"
+)
