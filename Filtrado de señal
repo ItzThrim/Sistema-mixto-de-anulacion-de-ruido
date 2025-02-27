@@ -1,0 +1,31 @@
+import numpy as np
+import soundfile as sf
+
+def remove_noise_fft(
+    filename="signal_with_noise.wav",
+    output_filename="filtered_signal.wav",
+    target_freq=440,
+    bandwidth=50,
+    sampling_rate=44100,
+):
+    # Leer la señal de entrada desde el archivo WAV
+    wave, sampling = sf.read(filename)
+
+    # Aplicar la Transformada de Fourier
+    fft_wave = np.fft.fft(wave)
+    freqs = np.fft.fftfreq(len(wave), 1 / sampling_rate)
+
+    # Crear una máscara para mantener solo la frecuencia deseada y eliminar ruido
+    mask = (freqs > target_freq - bandwidth) & (freqs < target_freq + bandwidth)
+
+    # Aplicar la máscara: Mantener solo las frecuencias deseadas
+    filtered_fft = np.where(mask, fft_wave, 0)
+
+    # Aplicar la Transformada Inversa de Fourier (IFFT)
+    filtered_wave = np.fft.ifft(filtered_fft).real
+
+    # Guardar la señal filtrada en un archivo WAV
+    sf.write(output_filename, filtered_wave, sampling, subtype="PCM_16")
+
+# Filtrar la señal con ruido y guardar el resultado
+remove_noise_fft("../data/raw/440_with_noise.wav", "../data/raw/440_filtered.wav")
