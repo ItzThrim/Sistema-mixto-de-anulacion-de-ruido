@@ -1,0 +1,174 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+import soundfile as sf
+from scipy.signal import butter, lfilter
+from google.colab import files  # Para descargar archivos en Colab
+
+# Función para filtro pasa alto
+def butter_highpass(cutoff, fs, order=8):
+    nyq = 0.5 * fs
+    normal_cutoff = cutoff / nyq
+    b, a = butter(order, normal_cutoff, btype='high', analog=False)
+    return b, a
+
+def highpass_filter(data, cutoff, fs, order=8):
+    b, a = butter_highpass(cutoff, fs, order=order)
+    y = lfilter(b, a, data)
+    return y
+
+# Parámetros de la señal
+sampling_rate = 44100  # Frecuencia de muestreo
+duration = 10  # Duración en segundos
+frequencies = [100, 150, 200, 440]  # Frecuencias presentes
+noise_level = 0.5  # Nivel de ruido
+
+# Generar señal con ruido
+time = np.linspace(0, duration, int(sampling_rate * duration), endpoint=False)
+signal = sum(0.5 * np.sin(2 * np.pi * f * time) for f in frequencies)
+noise = noise_level * np.random.randn(len(time))
+noise = lfilter(*butter_highpass(250, sampling_rate), noise)  # Filtrar el ruido (> 250 Hz)
+signal_with_noise = signal + noise
+
+# Aplicar el filtro pasa alto a la señal con ruido
+cutoff = 250
+filtered_signal = highpass_filter(signal_with_noise, cutoff, sampling_rate)
+
+# Guardar la señal filtrada como archivo de audio
+sf.write("filtered_signal.wav", filtered_signal, sampling_rate)
+
+# Crear la animación de la onda
+def animate_wave(
+    wave_data, time, output_filename="filtered_signal.mp4",
+    duration_to_plot=0.02, fps=30, speed_factor=3, bitrate=3000, title="Señal Filtrada (> 250 Hz)"
+):
+    num_samples = int(sampling_rate * duration_to_plot)
+    wave_data = wave_data[:num_samples]
+    time = time[:num_samples]
+
+    amp_max = np.max(np.abs(wave_data)) * 1.1
+
+    fig, ax = plt.subplots(figsize=(12, 5))
+    ax.set_xlim(time[0], time[-1])
+    ax.set_ylim(-amp_max, amp_max)
+    ax.set_xlabel("Tiempo [s]", fontsize=14, fontweight="bold")
+    ax.set_ylabel("Amplitud", fontsize=14, fontweight="bold")
+    ax.set_title(title, fontsize=16, fontweight="bold")
+
+    (line,) = ax.plot([], [], lw=2, color="r")
+
+    def update(frame):
+        index = frame * speed_factor
+        if index >= len(time):
+            index = len(time) - 1
+        line.set_data(time[:index], wave_data[:index])
+        return (line,)
+
+    frames_to_use = len(time) // speed_factor
+    ani = animation.FuncAnimation(
+        fig, update, frames=frames_to_use, interval=1000 / fps, blit=True
+    )
+
+    writer = animation.FFMpegWriter(fps=fps, bitrate=bitrate)
+    ani.save(output_filename, writer=writer)
+
+    plt.close(fig)
+
+    # Descargar automáticamente el archivo en Google Colab
+    files.download(output_filename)
+
+# Generar la animación y descargarla
+animate_wave(filtered_signal, time)
+
+
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+import soundfile as sf
+from scipy.signal import butter, lfilter
+from google.colab import files  # Para descargar archivos en Colab
+
+# Función para filtro pasa bajo
+def lowpass_filter(data, cutoff, fs, order=8):
+    nyq = 0.5 * fs
+    normal_cutoff = cutoff / nyq
+    b, a = butter(order, normal_cutoff, btype='low', analog=False)
+    y = lfilter(b, a, data)
+    return y
+
+# Función para filtro pasa alto
+def highpass_filter(data, cutoff, fs, order=8):
+    nyq = 0.5 * fs
+    normal_cutoff = cutoff / nyq
+    b, a = butter(order, normal_cutoff, btype='high', analog=False)
+    y = lfilter(b, a, data)
+    return y
+
+# Parámetros de la señal
+sampling_rate = 44100  # Frecuencia de muestreo
+duration = 10  # Duración en segundos
+frequencies = [100, 150, 200, 440]  # Frecuencias presentes
+noise_level = 0.5  # Nivel de ruido
+
+# Generar señal
+time = np.linspace(0, duration, int(sampling_rate * duration), endpoint=False)
+signal = sum(0.5 * np.sin(2 * np.pi * f * time) for f in frequencies)
+
+# Generar ruido (contenido solo en < 250 Hz)
+noise = noise_level * np.random.randn(len(time))
+noise = lowpass_filter(noise, 250, sampling_rate)  # Filtrar el ruido para que tenga solo < 250 Hz
+signal_with_noise = signal + noise  # Señal con ruido de baja frecuencia
+
+# Aplicar el filtro pasa alto para eliminar < 250 Hz
+cutoff = 250
+filtered_signal = highpass_filter(signal_with_noise, cutoff, sampling_rate)
+
+# Guardar la señal filtrada como archivo de audio
+sf.write("filtered_signal.wav", filtered_signal, sampling_rate)
+
+# Crear la animación de la onda
+def animate_wave(
+    wave_data, time, output_filename="filtered_signal.mp4",
+    duration_to_plot=0.02, fps=30, speed_factor=3, bitrate=3000, title="Señal Filtrada (> 250 Hz)"
+):
+    num_samples = int(sampling_rate * duration_to_plot)
+    wave_data = wave_data[:num_samples]
+    time = time[:num_samples]
+
+    amp_max = np.max(np.abs(wave_data)) * 1.1
+
+    fig, ax = plt.subplots(figsize=(12, 5))
+    ax.set_xlim(time[0], time[-1])
+    ax.set_ylim(-amp_max, amp_max)
+    ax.set_xlabel("Tiempo [s]", fontsize=14, fontweight="bold")
+    ax.set_ylabel("Amplitud", fontsize=14, fontweight="bold")
+    ax.set_title(title, fontsize=16, fontweight="bold")
+
+    (line,) = ax.plot([], [], lw=2, color="r")
+
+    def update(frame):
+        index = frame * speed_factor
+        if index >= len(time):
+            index = len(time) - 1
+        line.set_data(time[:index], wave_data[:index])
+        return (line,)
+
+    frames_to_use = len(time) // speed_factor
+    ani = animation.FuncAnimation(
+        fig, update, frames=frames_to_use, interval=1000 / fps, blit=True
+    )
+
+    writer = animation.FFMpegWriter(fps=fps, bitrate=bitrate)
+    ani.save(output_filename, writer=writer)
+
+    plt.close(fig)
+
+    # Descargar automáticamente el archivo en Google Colab
+    files.download(output_filename)
+
+# Generar la animación y descargarla
+animate_wave(filtered_signal, time)
+
+  
+
+  
